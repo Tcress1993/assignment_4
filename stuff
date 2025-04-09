@@ -1,0 +1,95 @@
+db.movies.aggregate(
+    //for movies/:movieId route
+    //{
+    //    $match: {
+    //        _id: ObjectId('603e81e247af29000401d1fa')
+    //    }
+//    },
+    {
+        $lookup: {
+               from: "reviews",
+               localField: "_id",
+               foreignField: "movieId",
+               as: "reviews"
+             }   
+    },
+    {
+        $addFields: {
+            avgRating: {
+                $cond: {
+                    if: { $gt: [ {$size: "$reviews" }, 0] },
+                    then: { $avg: "$reviews.rating" },
+                    else: null
+                }
+            }
+        }
+    },
+    {
+        $sort: {
+            avgRating: -1,
+            title: 1
+        }
+    }
+    )
+    //server.js
+    //const Movie = require(./Movies)
+    // two route
+    //route.route('/movies') - get all movies
+    //first check for req.query.reviews === "true".  e.g. url/movies?reviews=true <--- 
+    // const movies = await Movie.aggregate([
+    //    {
+    //    $lookup: {
+    //           from: "reviews",
+    //           localField: "_id",
+    //           foreignField: "movieId",
+    //           as: "reviews"
+    //         }   
+    //},
+//    {
+//       $addFields: {
+//           avgRating: {
+//               $cond: {
+//                   if: { $gt: [ {$size: "$reviews" }, 0] },
+//                   then: { $avg: "$reviews.rating" },
+//                   else: null
+//               }
+//           }
+//       }
+//   },
+//   {
+//       $sort: {
+//           avgRating: -1,
+//           title: 1
+//       }
+//   }
+//   ])
+    // return res.json(movies)
+//const mongoose = require('mongoose')
+//    
+//route.route(/movies/:movieId)
+//.get 
+//const id = req.params.movieId
+//if req.query.reviews === "true"
+ 
+//{ 
+// $match: { _id: new mongoose.Types.ObjectId(id)
+//}
+
+.get(async (req, res) => {
+      try {
+        const {title} = req.body; // pulls the title from the request body
+        if (!title){
+          // if the user doesnt chose a title then it will return all movies
+          const movies = await Movie.find({}); // Fetch all movies
+          res.status(200).json(movies); // Respond with the movies
+        }
+        const oneMovie = await Movie.findOne({title: title}); // Find the movie by title
+        if (!oneMovie){
+          res.status(404).json({success: false, msg: "Movie not found."}); // 404 Not Found
+        }
+        res.status(200).json(oneMovie); // Respond with the movie
+      } catch(err){
+        res.status(500).json({ success: false, message: 'GET request not supported' });
+      }
+      
+    })

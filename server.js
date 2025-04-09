@@ -87,6 +87,167 @@ router.post('/signin', function (req, res) {
     })
 });
 
+router.route('/movies')
+    .get(async (req, res) => {
+        try {
+            if (req.query.review === "true"){
+                const movies = await Movie.aggregate([
+                  {$lookup: {
+                    from: "reviews",
+                    localField: "_id",
+                    foreignField: "movieId",
+                    as: "reviews"
+                  }},
+                  {$addFields: {
+                    avgRating: {
+                      $cond: {
+                        if: {$gt: [{$size: "$reviews"}, 0]},
+                        then: {$avg: "$reviews.rating"},
+                        else: null
+                      }
+                    }
+                  }},
+                  {$sort: {
+                    avgRating: -1,
+                    title: 1
+                  }}
+                ])
+            res.status(200).json(movies);
+
+        }}catch (err){
+            res.status(500).json({success: false, msg: "GET request not supported."});
+        }
+    })
+    .post(async (req, res) => {
+        try {
+          const { title, releaseDate, genre, actors } = req.body; // Destructure the request body
+          if (!title || !releaseDate || !genre || !actors) {
+            //if any part of the request body is missing, return a 400 error
+            return res.status(400).json({ success: false, msg: 'Please include all required fields.' }); // 400 Bad Request
+          }
+          if (actors.length < 3) {
+            return res.status(400).json({ success: false, msg: "Please include atleast 3 actors."}); // 400 Bad Request
+          }
+          // Check for duplicate movies
+          if (await Movie.findOne({ title })) {
+            return res.status(409).json({ success: false, msg: 'Movie already exists.' }); // 409 Conflict
+          }
+          const newMovie = new Movie(req.body); // Create a new movie instance
+          await newMovie.save(); // Save the movie to the database
+          res.status(201).json({ success: true, msg: 'Movie added successfully.', movie: newMovie }); // 200 OK
+        } catch (err) {
+          console.error(err); // Log the error for debugging
+          res.status(500).json({success: false, message: "movie not saved."}); // 500 Internal Server Error
+        }
+    })
+    .delete(async (req, res) => {
+        try{
+          const {title} = req.body; // pulls the id from the request body
+          if (!title) {
+            return res.status(400).json({ success: false, msg: 'Please include the title of the movie to delete.' }); // 400 Bad Request
+          }
+          const deleteMovie = await Movie.findOneAndDelete({title: title}); // Find and delete the movie by title
+          if (!deleteMovie) {
+            return res.status(404).json({ success: false, msg: 'Movie not found.' }); // 404 Not Found
+          }
+          res.status(200).json({sucess: true, msg: "Movie deleted successfully."}); //movie deleted successfully
+        } catch(err){
+          res.status(500).json({ success: false, message: 'DELETE request not supported' }); // 500 Internal Server Error
+        }
+    })
+    .put(async (req, res) => {
+      try {
+        const {title, ...update} = req.body;
+        if (title){
+          // No ID provided, return an error
+          res.status(400).json({success: false, msg: "ID is required to update a movie."}); // 400 Bad Request
+        }
+        // Update the movie with the new data
+        const movieUpdates = await Movie.findByIdAndUpdate(title, {$set: update}, {new: true, runValidators: true});
+        if (!movieUpdates){
+          // Movie not found, return an error
+          res.status(404).json({success: false, msg: "Movie not found."}); // 404 Not Found
+        }
+        res.status(200).json({success: true, msg: "Movie updated successfully.", movie: movieUpdates}); // 200 OK
+      }catch(err){
+        res.status(500).json({success: false, msg: "Movie not updated."}); // 500 Internal Server Error
+      }
+    });
+
+router.route('/movies/:movieId')
+    .get(async (req, res) => {
+      const id = req.params.movieId; // Get the movie ID from the URL
+      try{
+        if (req.query.review === "true"){
+          const movie = await Movie.aggregate([
+            {$match: {_id: new mongoose.Types.ObjectId(id)}},
+            {$lookup: {
+              from: "reviews",
+              localField: "_id",
+              foreignField: "movieId",
+              as: "reviews"
+            }},
+            {$addFields: {
+              avgRating: {
+                $cond: {
+                  if: {$gt: [{$size: "$reviews"}, 0]},
+                  then: {$avg: "$reviews.rating"},
+                  else: null
+                }
+              }
+            }}
+          ])
+      }
+      res.status(200).json(movie); // Respond with the movie
+    }catch(err){
+      res.status(500).json({success: false, msg: "GET request not supported."}); // 500 Internal Server Error
+    }
+  });
+
+router.route('/review')
+    .get(async (req, res) => {
+        try {
+            const {movieId} = req.body; // pulls the id from the request body
+            if (!movieId){
+                res.status(400).json({success: false, msg: "No Id entered."});
+            }
+            const reviews = await Review.find({movieId: movieId});
+            res.status(200).json(reviews);
+
+        } catch(err){
+            res.status(500).json({success: false, msg: "GET request not supported."});
+        }
+    })
+    .post(async (req, res) => {
+        try {
+            const {movieId, userName, review, rating} = req.body;
+            if (!movieId || !userName || !review || !rating) {
+                res.status(400).json({success: false, msg: "Please include all required fields."});
+            }
+            const newReview = new Review(req.body);
+            await newReview.save();
+            res.status(201).json({success: true, msg: "Review added successfully.", review: newReview});
+        } catch(err){
+            res.status(500).json({success: false, msg: "Review not added."});
+        }
+    })
+    .delete(async (req, res) => {
+        try{
+            const {_id} = req.body;
+            if (!_id){
+                res.status(400).json({success: false, msg: "No Id entered."});
+            }
+            const deleteReview = await Review.findByIdAndDelete(_id);
+            if (!deleteReview){
+                res.status(404).json({success: false, msg: "Review not found."});
+            }
+            res.status(200).json({success: true, msg: "Review deleted successfully."});
+        } catch(err){
+            res.status(500).json({success: false, msg: "Review not deleted."});
+        }
+    })
+
+
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
 module.exports = app; // for testing only

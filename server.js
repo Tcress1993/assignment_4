@@ -114,6 +114,9 @@ router.route('/movies')
                 ])
             res.status(200).json(movies);
 
+        }else{ // if review is false, return all movie without reviews
+          const movie = await Movie.find();
+          res.status(200).json(movie); // Respond with the movie
         }}catch (err){
             res.status(500).json({success: false, msg: "GET request not supported."});
         }
@@ -197,8 +200,14 @@ router.route('/movies/:movieId')
               }
             }}
           ])
+          res.status(200).json(movie); // Respond with the movie
+      } else { //if review is false, return the movie without reviews
+        const movie = await Movie.findById(id); // Find the movie by ID
+        if (!movie) {
+          return res.status(404).json({ success: false, msg: 'Movie not found.' }); // 404 Not Found
+        }
+        res.status(200).json(movie); // Respond with the movie
       }
-      res.status(200).json(movie); // Respond with the movie
     }catch(err){
       res.status(500).json({success: false, msg: "GET request not supported."}); // 500 Internal Server Error
     }

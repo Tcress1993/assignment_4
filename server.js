@@ -14,7 +14,7 @@ var cors = require('cors');
 var User = require('./Users');
 var Movie = require('./Movies');
 var Review = require('./Reviews');
-
+require('dotenv').config();
 var app = express();
 app.use(cors());
 app.use(bodyParser.json());

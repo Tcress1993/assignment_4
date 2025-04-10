@@ -11,7 +11,7 @@ mongoose.set('useCreateIndex', true);
 
 // Movie schema
 var ReviewSchema = new Schema({
-    movieId: { type: String, required: true },
+    movieId: { type: mongoose.Schema.Types.ObjectId, ref: "Movie" },
     userName: String,
     review: String,
     rating: {type: Number, min: 1, max: 5}

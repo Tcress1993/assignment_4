@@ -16,6 +16,7 @@ var Movie = require('./Movies');
 var Review = require('./Reviews');
 require('dotenv').config();
 var app = express();
+const mongoose = require('mongoose');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -181,9 +182,11 @@ router.route('/movies/:movieId')
     .get(async (req, res) => {
       const id = req.params.movieId; // Get the movie ID from the URL
       try{
+        console.log(req.query.review);
+        console.log(id);
         if (req.query.review === "true"){
-          const movie = await Movie.aggregate([
-            {$match: {_id: new mongoose.Types.ObjectId(id)}},
+          const movies = await Movie.aggregate([
+            {$match: { _id: new mongoose.Types.ObjectId(id)}},
             {$lookup: {
               from: "reviews",
               localField: "_id",
@@ -198,9 +201,13 @@ router.route('/movies/:movieId')
                   else: null
                 }
               }
+            }},
+            {$sort: {
+              avgRating: -1,
+              title: 1
             }}
           ])
-          res.status(200).json(movie); // Respond with the movie
+          res.status(200).json(movies); // Respond with the movie
       } else { //if review is false, return the movie without reviews
         const movie = await Movie.findById(id); // Find the movie by ID
         if (!movie) {
@@ -234,6 +241,7 @@ router.route('/review')
                 res.status(400).json({success: false, msg: "Please include all required fields."});
             }
             const newReview = new Review(req.body);
+            console.log(newReview);
             await newReview.save();
             res.status(201).json({success: true, msg: "Review added successfully.", review: newReview});
         } catch(err){

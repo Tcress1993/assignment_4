@@ -89,7 +89,7 @@ router.post('/signin', function (req, res) {
 });
 
 router.route('/movies')
-    .get(async (req, res) => {
+    .get(authJwtController.isAuthenticated, async (req, res) => {
         try {
             if (req.query.review === "true"){
                 const movies = await Movie.aggregate([
@@ -122,7 +122,7 @@ router.route('/movies')
             res.status(500).json({success: false, msg: "GET request not supported."});
         }
     })
-    .post(async (req, res) => {
+    .post(authJwtController.isAuthenticated, async (req, res) => {
         try {
           const { title, releaseDate, genre, actors } = req.body; // Destructure the request body
           if (!title || !releaseDate || !genre || !actors) {
@@ -144,7 +144,7 @@ router.route('/movies')
           res.status(500).json({success: false, message: "movie not saved."}); // 500 Internal Server Error
         }
     })
-    .delete(async (req, res) => {
+    .delete(authJwtController.isAuthenticated, async (req, res) => {
         try{
           const {title} = req.body; // pulls the id from the request body
           if (!title) {
@@ -159,7 +159,7 @@ router.route('/movies')
           res.status(500).json({ success: false, message: 'DELETE request not supported' }); // 500 Internal Server Error
         }
     })
-    .put(async (req, res) => {
+    .put(authJwtController.isAuthenticated, async (req, res) => {
       try {
         const {title, ...update} = req.body;
         if (title){
@@ -179,7 +179,7 @@ router.route('/movies')
     });
 
 router.route('/movies/:movieId')
-    .get(async (req, res) => {
+    .get(authJwtController.isAuthenticated, async (req, res) => {
       const id = req.params.movieId; // Get the movie ID from the URL
       try{
         console.log(req.query.review);
@@ -221,7 +221,7 @@ router.route('/movies/:movieId')
   });
 
 router.route('/review')
-    .get(async (req, res) => {
+    .get(authJwtController.isAuthenticated, async (req, res) => {
         try {
             const {movieId} = req.body; // pulls the id from the request body
             if (!movieId){
@@ -234,7 +234,7 @@ router.route('/review')
             res.status(500).json({success: false, msg: "GET request not supported."});
         }
     })
-    .post(async (req, res) => {
+    .post(authJwtController.isAuthenticated, async (req, res) => {
         try {
             const {movieId, userName, review, rating} = req.body;
             if (!movieId || !userName || !review || !rating) {
@@ -248,7 +248,7 @@ router.route('/review')
             res.status(500).json({success: false, msg: "Review not added."});
         }
     })
-    .delete(async (req, res) => {
+    .delete(authJwtController.isAuthenticated, async (req, res) => {
         try{
             const {_id} = req.body;
             if (!_id){

@@ -263,6 +263,21 @@ router.route('/review')
             res.status(500).json({success: false, msg: "Review not deleted."});
         }
     })
+    .put(authJwtController.isAuthenticated, async (req, res) => {
+        try {
+            const {_id, ...update} = req.body;
+            if (!_id){
+                res.status(400).json({success: false, msg: "No Id entered."});
+            }
+            const reviewUpdates = await Review.findByIdAndUpdate(_id, {$set: update}, {new: true, runValidators: true});
+            if (!reviewUpdates){
+                res.status(404).json({success: false, msg: "Review not found."});
+            }
+            res.status(200).json({success: true, msg: "Review updated successfully.", review: reviewUpdates});
+        } catch(err){
+            res.status(500).json({success: false, msg: "Review not updated."});
+        }
+    })
 
 
 app.use('/', router);

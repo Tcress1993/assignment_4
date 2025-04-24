@@ -124,7 +124,7 @@ router.route('/movies')
     })
     .post(authJwtController.isAuthenticated, async (req, res) => {
         try {
-          const { title, releaseDate, genre, actors } = req.body; // Destructure the request body
+          const { title, releaseDate, genre, actors} = req.body; // Destructure the request body
           if (!title || !releaseDate || !genre || !actors) {
             //if any part of the request body is missing, return a 400 error
             return res.status(400).json({ success: false, msg: 'Please include all required fields.' }); // 400 Bad Request
@@ -173,6 +173,22 @@ router.route('/movies')
           res.status(404).json({success: false, msg: "Movie not found."}); // 404 Not Found
         }
         res.status(200).json({success: true, msg: "Movie updated successfully.", movie: movieUpdates}); // 200 OK
+      }catch(err){
+        res.status(500).json({success: false, msg: "Movie not updated."}); // 500 Internal Server Error
+      }
+    })
+    .patch(authJwtController.isAuthenticated, async (req, res) => {
+      //used to add the imageUrl to the movie
+      try{
+        const {title, imageUrl} = req.body; // pulls the id from the request body
+        if (!title || !imageUrl) {
+          res.status(400).json({success: false, msg: "Please include all required fields."}); // 400 Bad Request
+        }
+        const movieUpdates = await Movie.findOneAndUpdate({title: title}, {$set: {imageUrl: imageUrl}}, {new: true, runValidators: true});
+        if (!movieUpdates){
+          res.status(404).json({success: false, msg: "Movie not found."}); // 404 Not Found
+        }
+        res.status(200).json({success: true, msg: "Movie updated successfully.", movie: movieUpdates}); // 200 OK 
       }catch(err){
         res.status(500).json({success: false, msg: "Movie not updated."}); // 500 Internal Server Error
       }

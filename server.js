@@ -162,9 +162,9 @@ router.route('/movies')
     .put(authJwtController.isAuthenticated, async (req, res) => {
       try {
         const {title, ...update} = req.body;
-        if (title){
+        if (!title){
           // No ID provided, return an error
-          res.status(400).json({success: false, msg: "ID is required to update a movie."}); // 400 Bad Request
+          res.status(400).json({success: false, msg: "title is required to update a movie."}); // 400 Bad Request
         }
         // Update the movie with the new data
         const movieUpdates = await Movie.findByIdAndUpdate(title, {$set: update}, {new: true, runValidators: true});

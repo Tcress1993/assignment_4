@@ -7,7 +7,7 @@ try {
 }catch (error) {
     console.log("could not connect");
 }
-mongoose.set('useCreateIndex', true);
+//mongoose.set('useCreateIndex', true);
 
 // Movie schema
 var ReviewSchema = new Schema({
